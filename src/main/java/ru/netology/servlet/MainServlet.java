@@ -14,6 +14,9 @@ import java.util.concurrent.ConcurrentHashMap;
 public class MainServlet extends HttpServlet {
     private PostController controller;
     private final Map<String, Map<String, Handler>> handlers = new ConcurrentHashMap<>();
+    private static final String pathPosts = "/api/posts";
+    private static final String pathPostsSlash = "/api/posts/";
+    private static final String regex = "/api/posts/\\d+";
 
     @Override
     public void init() {
@@ -21,19 +24,19 @@ public class MainServlet extends HttpServlet {
         final var service = new PostService(repository);
         controller = new PostController(service);
 
-        addHandler(HTTPMethods.GET, "/api/posts", (path, req, resp) -> {
+        addHandler(HTTPMethods.GET, pathPosts, (path, req, resp) -> {
             try {
                 controller.all(resp);
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
         });
-        addHandler(HTTPMethods.GET, "/api/posts/", (path, req, resp) -> {
+        addHandler(HTTPMethods.GET, pathPostsSlash, (path, req, resp) -> {
             final var id = Long.parseLong(path.substring(path.lastIndexOf("/") + 1));
             controller.getById(id, resp);
         });
-        addHandler(HTTPMethods.POST, "/api/posts", (path, req, resp) -> controller.save(req.getReader(), resp));
-        addHandler(HTTPMethods.DELETE, "/api/posts/", (path, req, resp) -> {
+        addHandler(HTTPMethods.POST, pathPosts, (path, req, resp) -> controller.save(req.getReader(), resp));
+        addHandler(HTTPMethods.DELETE, pathPostsSlash, (path, req, resp) -> {
             final var id = Long.parseLong(path.substring(path.lastIndexOf("/") + 1));
             controller.removeById(id, resp);
         });
@@ -46,8 +49,8 @@ public class MainServlet extends HttpServlet {
             final var method = req.getMethod();
 
             Handler handler;
-            if (path.startsWith("/api/posts/") && path.matches("/api/posts/\\d+")) {
-                handler = handlers.get(method).get("/api/posts/");
+            if (path.startsWith(pathPostsSlash) && path.matches(regex)) {
+                handler = handlers.get(method).get(pathPostsSlash);
             } else {
                 handler = handlers.get(method).get(path);
             }
